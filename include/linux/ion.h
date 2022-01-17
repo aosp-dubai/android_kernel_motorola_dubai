@@ -18,6 +18,7 @@
 #include <linux/sched.h>
 #include <linux/shrinker.h>
 #include <linux/types.h>
+#include <linux/msm_dma_iommu_mapping.h>
 #include <uapi/linux/ion.h>
 
 #ifdef CONFIG_DEBUG_FS
@@ -64,6 +65,7 @@ struct ion_buffer {
 	pid_t client_pids[MAX_CLIENTS_NUM];
 	int ref_cnt;
 	#endif
+	struct msm_iommu_data iommu_data;
 };
 
 /**
