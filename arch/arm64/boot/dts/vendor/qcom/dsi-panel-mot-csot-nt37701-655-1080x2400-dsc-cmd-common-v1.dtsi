@@ -182,6 +182,9 @@ qcom,mdss-dsi-display-timings {
 		qcom,mdss-dsc-bit-per-component = <10>;
 		qcom,mdss-dsc-bit-per-pixel = <8>;
 		qcom,mdss-dsc-block-prediction-enable;
+
+		qcom,panel-roi-alignment = <1080 12 1080 12 1080 12>;
+		qcom,partial-update-enabled = "single_roi";
 	};
 	timing@1{
 		qcom,mdss-dsi-cmd-mode;
@@ -264,6 +267,9 @@ qcom,mdss-dsi-display-timings {
 		qcom,mdss-dsc-bit-per-component = <10>;
 		qcom,mdss-dsc-bit-per-pixel = <8>;
 		qcom,mdss-dsc-block-prediction-enable;
+
+		qcom,panel-roi-alignment = <1080 12 1080 12 1080 12>;
+		qcom,partial-update-enabled = "single_roi";
 	};
 	timing@2{
 		qcom,mdss-dsi-cmd-mode;
@@ -346,6 +352,9 @@ qcom,mdss-dsi-display-timings {
 		qcom,mdss-dsc-bit-per-component = <10>;
 		qcom,mdss-dsc-bit-per-pixel = <8>;
 		qcom,mdss-dsc-block-prediction-enable;
+
+		qcom,panel-roi-alignment = <1080 12 1080 12 1080 12>;
+		qcom,partial-update-enabled = "single_roi";
 	};
 	timing@3{
 		qcom,mdss-dsi-cmd-mode;
@@ -428,6 +437,9 @@ qcom,mdss-dsi-display-timings {
 		qcom,mdss-dsc-bit-per-component = <10>;
 		qcom,mdss-dsc-bit-per-pixel = <8>;
 		qcom,mdss-dsc-block-prediction-enable;
+
+		qcom,panel-roi-alignment = <1080 12 1080 12 1080 12>;
+		qcom,partial-update-enabled = "single_roi";
 	};
 	timing@4{
 		qcom,mdss-dsi-cmd-mode;
@@ -510,6 +522,9 @@ qcom,mdss-dsi-display-timings {
 		qcom,mdss-dsc-bit-per-component = <10>;
 		qcom,mdss-dsc-bit-per-pixel = <8>;
 		qcom,mdss-dsc-block-prediction-enable;
+
+		qcom,panel-roi-alignment = <1080 12 1080 12 1080 12>;
+		qcom,partial-update-enabled = "single_roi";
 	};
 
 
