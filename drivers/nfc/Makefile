@@ -18,3 +18,6 @@ obj-$(CONFIG_NFC_NXP_NCI)	+= nxp-nci/
 obj-$(CONFIG_NFC_S3FWRN5)	+= s3fwrn5/
 obj-$(CONFIG_NFC_ST95HF)	+= st95hf/
 obj-y				+= qti/
+obj-$(CONFIG_SEC_NFC_PRODUCT_N5)		+= sec_nfc/
+obj-y				+= st21nfc/
+obj-y				+= sn1xx/
