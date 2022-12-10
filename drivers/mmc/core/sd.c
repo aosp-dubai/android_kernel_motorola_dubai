@@ -1119,7 +1119,7 @@ retry:
 					mmc_remove_card(card);
 				goto retry;
 			}
-			goto done;
+			goto cont;
 		}
 	}
 
@@ -1156,6 +1156,7 @@ retry:
 		}
 	}
 
+cont:
 	if (host->cqe_ops && !host->cqe_enabled) {
 		err = host->cqe_ops->cqe_enable(host, card);
 		if (!err) {
