@@ -1,4 +1,51 @@
-obj-$(CONFIG_TOUCHSCREEN_GOODIX_BRL_I2C)                += goodix_brl_i2c.o
-obj-$(CONFIG_TOUCHSCREEN_GOODIX_BRL_SPI)                += goodix_brl_spi.o
-obj-$(CONFIG_TOUCHSCREEN_GOODIX_BRL)			+= goodix_core.o
-goodix_core-y   :=  goodix_ts_core.o goodix_brl_hw.o goodix_cfg_bin.o goodix_ts_utils.o goodix_brl_fwupdate.o goodix_ts_tools.o goodix_ts_gesture.o goodix_ts_inspect.o goodix_ts_mmi.o
+obj-$(CONFIG_TOUCHSCREEN_GOODIX_BRL) := goodix_brl_mmi.o
+goodix_brl_mmi-objs := \
+					goodix_brl_i2c.o \
+					goodix_brl_spi.o \
+					goodix_ts_core.o \
+					goodix_brl_hw.o \
+					goodix_cfg_bin.o \
+					goodix_ts_utils.o \
+					goodix_brl_fwupdate.o \
+					goodix_ts_inspect.o \
+					goodix_ts_tools.o
+
+ifneq ($(filter m y, $(CONFIG_DRM_PANEL_EVENT_NOTIFICATIONS)),)
+	ccflags-y += -DCONFIG_DRM_PANEL_EVENT_NOTIFICATIONS
+endif
+
+ifneq ($(filter m y,$(CONFIG_DRM_PANEL_NOTIFICATIONS)),)
+    ccflags-y += -DCONFIG_DRM_PANEL_NOTIFICATIONS
+endif
+
+ifneq ($(filter m y,$(CONFIG_TOUCHSCREEN_GOODIX_BRL_SPI)),)
+    ccflags-y += -DCONFIG_TOUCHSCREEN_GOODIX_BRL_SPI
+endif
+
+ifneq ($(filter m y,$(CONFIG_GTP_FOD)),)
+    ccflags-y += -DCONFIG_GTP_FOD
+    goodix_brl_mmi-objs += goodix_ts_gesture_fod.o
+else
+    goodix_brl_mmi-objs += goodix_ts_gesture.o
+endif
+
+ifneq ($(filter m y,$(CONFIG_GTP_LIMIT_USE_SUPPLIER)),)
+    ccflags-y += -DCONFIG_GTP_LIMIT_USE_SUPPLIER
+endif
+
+ifneq ($(filter m y,$(CONFIG_GTP_ENABLE_PM_QOS)),)
+    ccflags-y += -DCONFIG_GTP_ENABLE_PM_QOS
+endif
+
+ifneq ($(filter m y,$(CONFIG_GOODIX_ESD_ENABLE)),)
+    ccflags-y += -DCONFIG_GOODIX_ESD_ENABLE
+endif
+
+ifneq ($(filter m y,$(CONFIG_TARGET_BUILD_FACROTY)),)
+    ccflags-y += -DGTP_SAVE_IN_CSV
+endif
+
+ifneq ($(filter m y,$(CONFIG_INPUT_TOUCHSCREEN_MMI)),)
+    ccflags-y += -DCONFIG_INPUT_TOUCHSCREEN_MMI
+    goodix_brl_mmi-objs += goodix_ts_mmi.o
+endif
