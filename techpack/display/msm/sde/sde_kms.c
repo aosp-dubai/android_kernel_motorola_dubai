@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  * Copyright (c) 2014-2021, The Linux Foundation. All rights reserved.
  * Copyright (C) 2013 Red Hat
  * Author: Rob Clark <robdclark@gmail.com>
@@ -1763,6 +1763,7 @@ static int _sde_kms_setup_displays(struct drm_device *dev,
 		.set_allowed_mode_switch = NULL,
 	};
 	static const struct sde_connector_ops dp_ops = {
+		.set_info_blob = dp_connector_set_info_blob,
 		.post_init  = dp_connector_post_init,
 		.detect     = dp_connector_detect,
 		.get_modes  = dp_connector_get_modes,
@@ -1914,6 +1915,7 @@ static int _sde_kms_setup_displays(struct drm_device *dev,
 	for (i = 0; i < sde_kms->dp_display_count &&
 			priv->num_encoders < max_encoders; ++i) {
 		int idx;
+		struct dp_display_info dp_info = {0};
 
 		display = sde_kms->dp_displays[i];
 		encoder = NULL;
@@ -1925,6 +1927,13 @@ static int _sde_kms_setup_displays(struct drm_device *dev,
 			continue;
 		}
 
+		rc = dp_display_get_info(display, &dp_info);
+		if (rc) {
+			SDE_ERROR("failed to read dp info, %d\n", rc);
+			continue;
+		}
+
+		info.h_tile_instance[0] = dp_info.intf_idx[0];
 		encoder = sde_encoder_init(dev, &info);
 		if (IS_ERR_OR_NULL(encoder)) {
 			SDE_ERROR("dp encoder init failed %d\n", i);
@@ -1945,7 +1954,7 @@ static int _sde_kms_setup_displays(struct drm_device *dev,
 					display,
 					&dp_ops,
 					DRM_CONNECTOR_POLL_HPD,
-					DRM_MODE_CONNECTOR_DisplayPort);
+					info.intf_type);
 		if (connector) {
 			priv->encoders[priv->num_encoders++] = encoder;
 			priv->connectors[priv->num_connectors++] = connector;
@@ -1958,9 +1967,9 @@ static int _sde_kms_setup_displays(struct drm_device *dev,
 		/* update display cap to MST_MODE for DP MST encoders */
 		info.capabilities |= MSM_DISPLAY_CAP_MST_MODE;
 
-		for (idx = 0; idx < sde_kms->dp_stream_count &&
+		for (idx = 0; idx < dp_info.stream_cnt &&
 				priv->num_encoders < max_encoders; idx++) {
-			info.h_tile_instance[0] = idx;
+			info.h_tile_instance[0] = dp_info.intf_idx[idx];
 			encoder = sde_encoder_init(dev, &info);
 			if (IS_ERR_OR_NULL(encoder)) {
 				SDE_ERROR("dp mst encoder init failed %d\n", i);
@@ -3896,6 +3905,7 @@ retry:
 				DRM_ERROR("failed to get crtc %d state\n",
 						conn->state->crtc->base.id);
 				drm_connector_list_iter_end(&conn_iter);
+				ret = -EINVAL;
 				goto unlock;
 			}
 
@@ -3934,6 +3944,12 @@ unlock:
 		drm_modeset_backoff(&ctx);
 		goto retry;
 	}
+
+	if ((ret || !num_crtcs) && sde_kms->suspend_state) {
+		drm_atomic_state_put(sde_kms->suspend_state);
+		sde_kms->suspend_state = NULL;
+	}
+
 	drm_modeset_drop_locks(&ctx);
 	drm_modeset_acquire_fini(&ctx);
 
@@ -3974,7 +3990,8 @@ static int sde_kms_pm_resume(struct device *dev)
 
 	SDE_EVT32(sde_kms->suspend_state != NULL);
 
-	drm_mode_config_reset(ddev);
+	if (sde_kms->suspend_state)
+		drm_mode_config_reset(ddev);
 
 	drm_modeset_acquire_init(&ctx, 0);
 retry:
