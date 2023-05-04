@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012-2021 The Linux Foundation. All rights reserved.
- * Copyright (c) 2021-2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2021-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -7231,12 +7231,13 @@ static void hdd_close_pre_cac_adapter(struct hdd_context *hdd_ctx)
 							SAP_PRE_CAC_IFNAME);
 	if (!pre_cac_adapter)
 		return;
+	hdd_ctx->sap_pre_cac_work.fn = NULL;
+	hdd_ctx->sap_pre_cac_work.arg = NULL;
 
 	errno = osif_vdev_sync_trans_start_wait(pre_cac_adapter->dev,
 						&vdev_sync);
 	if (errno)
 		return;
-
 	osif_vdev_sync_unregister(pre_cac_adapter->dev);
 	osif_vdev_sync_wait_for_ops(vdev_sync);
 
@@ -7464,7 +7465,7 @@ QDF_STATUS hdd_stop_adapter(struct hdd_context *hdd_ctx,
 			sap_ctx = WLAN_HDD_GET_SAP_CTX_PTR(adapter);
 			if (!wlan_sap_is_pre_cac_context(sap_ctx) &&
 			    (hdd_ctx->sap_pre_cac_work.fn))
-				cds_flush_work(&hdd_ctx->sap_pre_cac_work);
+				qdf_flush_work(&hdd_ctx->sap_pre_cac_work);
 
 			hdd_close_pre_cac_adapter(hdd_ctx);
 
@@ -7641,7 +7642,7 @@ QDF_STATUS hdd_stop_all_adapters(struct hdd_context *hdd_ctx)
 	hdd_enter();
 
 	if (hdd_ctx->sap_pre_cac_work.fn)
-		cds_flush_work(&hdd_ctx->sap_pre_cac_work);
+		qdf_flush_work(&hdd_ctx->sap_pre_cac_work);
 
 	hdd_for_each_adapter_dev_held_safe(hdd_ctx, adapter, next_adapter,
 					   NET_DEV_HOLD_STOP_ALL_ADAPTERS) {
@@ -10512,6 +10513,13 @@ void hdd_send_mscs_action_frame(struct hdd_context *hdd_ctx,
 {
 	uint64_t mscs_vo_pkt_delta;
 	unsigned long tx_vo_pkts;
+
+	/*
+	 * To disable MSCS feature in driver set mscs_pkt_threshold = 0
+	 * in ini file.
+	 */
+	if (!hdd_ctx->config->mscs_pkt_threshold)
+		return;
 
 	tx_vo_pkts = adapter->hdd_stats.tx_rx_stats.tx_classified_ac[SME_AC_VO];
 
@@ -17916,6 +17924,11 @@ static int con_mode_handler_ftm(const char *kmessage,
 
 	ret = param_set_int(kmessage, kp);
 
+	if (cds_is_driver_loaded() || cds_is_load_or_unload_in_progress()) {
+		pr_err("Driver already loaded or load/unload in progress");
+		return -ENOTSUPP;
+	}
+
 	if (con_mode_ftm != QDF_GLOBAL_FTM_MODE) {
 		pr_err("Only FTM mode supported!");
 		return -ENOTSUPP;
@@ -17977,6 +17990,7 @@ void hdd_clean_up_pre_cac_interface(struct hdd_context *hdd_ctx)
 	uint8_t vdev_id;
 	QDF_STATUS status;
 	struct hdd_adapter *precac_adapter;
+	struct sap_context *sap_ctx;
 
 	status = wlan_sap_get_pre_cac_vdev_id(hdd_ctx->mac_handle, &vdev_id);
 	if (QDF_IS_STATUS_ERROR(status)) {
@@ -17987,6 +18001,13 @@ void hdd_clean_up_pre_cac_interface(struct hdd_context *hdd_ctx)
 	precac_adapter = hdd_get_adapter_by_vdev(hdd_ctx, vdev_id);
 	if (!precac_adapter) {
 		hdd_err("invalid pre cac adapter");
+		return;
+	}
+
+	sap_ctx = WLAN_HDD_GET_SAP_CTX_PTR(precac_adapter);
+	if (wlan_sap_is_pre_cac_context(sap_ctx) &&
+	    hdd_ctx->sap_pre_cac_work.fn) {
+		hdd_debug("pre_cac_work already scheduled");
 		return;
 	}
 
